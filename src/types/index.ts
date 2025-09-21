@@ -74,3 +74,40 @@ export interface TripPlan {
   travelers: number;
   occasion?: string;
 }
+
+export interface PackingItem {
+  id: string;
+  category: string;
+  name: string;
+  description: string;
+  quantity: number;
+  priority: 'essential' | 'recommended' | 'optional';
+  product?: Product;
+  isSelected: boolean;
+  reason: string;
+}
+
+export interface PackingList {
+  id: string;
+  tripPlan: TripPlan;
+  items: PackingItem[];
+  generatedAt: Date;
+  totalItems: number;
+  selectedItems: number;
+}
+
+export interface CartItem {
+  id: string;
+  product: Product;
+  quantity: number;
+  size?: string;
+  color?: string;
+  addedAt: Date;
+}
+
+export interface Cart {
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+  lastUpdated: Date;
+}

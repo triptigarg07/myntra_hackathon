@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, Thermometer, Sparkles } from 'lucide-react';
+import { MapPin, Calendar, Users, Thermometer, Sparkles, Package } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { useApp } from '../context/AppContext';
+import { generatePackingList as generatePackingListUtil } from '../utils/packingGenerator';
+import { PackingListComponent } from './PackingList';
 
 export const TripPlanner: React.FC = () => {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showPackingList, setShowPackingList] = useState(false);
   const [tripPlan, setTripPlan] = useState({
     destination: '',
     tripType: 'leisure',
@@ -18,26 +21,36 @@ export const TripPlanner: React.FC = () => {
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generatePackingList = async () => {
+  const handleGeneratePackingList = async () => {
+    if (!tripPlan.destination.trim()) {
+      alert('Please enter a destination');
+      return;
+    }
+
     setIsGenerating(true);
     
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock packing suggestions based on trip details
-    const suggestions = [
-      'Comfortable walking shoes',
-      'Light cotton shirts',
-      'Sunscreen SPF 50+',
-      'Portable charger',
-      'Travel documents',
-      'Camera or phone for photos',
-    ];
-
-    // Here you would typically call an AI service
-    console.log('Generated packing list:', suggestions);
-    
-    setIsGenerating(false);
+    try {
+      // Simulate AI processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate packing list using our utility
+      const packingList = generatePackingListUtil(tripPlan, state.products);
+      
+      if (!packingList || packingList.items.length === 0) {
+        alert('Failed to generate packing list. Please try again.');
+        return;
+      }
+      
+      // Dispatch to context
+      dispatch({ type: 'SET_PACKING_LIST', payload: packingList });
+      
+      setShowPackingList(true);
+    } catch (error) {
+      console.error('Error generating packing list:', error);
+      alert('An error occurred while generating the packing list. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -159,7 +172,7 @@ export const TripPlanner: React.FC = () => {
           </div>
 
           <Button
-            onClick={generatePackingList}
+            onClick={handleGeneratePackingList}
             isLoading={isGenerating}
             className="w-full mt-6"
           >
@@ -174,6 +187,39 @@ export const TripPlanner: React.FC = () => {
               </p>
             </div>
           )}
+
+          {state.packingList && !showPackingList && (
+            <div className="mt-4 p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-700 font-medium">
+                    ✅ Packing list generated successfully!
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    {state.packingList.totalItems} items found for your trip to {state.packingList.tripPlan.destination}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setShowPackingList(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  View Packing List
+                </Button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {showPackingList && state.packingList && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6"
+        >
+          <PackingListComponent onClose={() => setShowPackingList(false)} />
         </motion.div>
       )}
     </Card>

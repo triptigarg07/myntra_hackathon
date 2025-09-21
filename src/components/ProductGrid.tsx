@@ -107,6 +107,7 @@ export const ProductGrid: React.FC = () => {
               product={product}
               onView={() => handleProductView(product.id)}
               onAdd={() => handleProductAdd(product.id)}
+              showGallery={product.images.length > 1}
             />
           </motion.div>
         ))}

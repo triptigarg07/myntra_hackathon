@@ -67,6 +67,7 @@ export const Recommendations: React.FC = () => {
             <ProductCard
               product={product}
               compact
+              showGallery={product.images.length > 1}
               onView={() => {
                 // Handle view
               }}

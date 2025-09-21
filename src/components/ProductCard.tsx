@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye, EyeOff } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
 import { Product } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { useApp } from '../context/AppContext';
+import { ProductImageGallery } from './ProductImageGallery';
 
 interface ProductCardProps {
   product: Product;
   onView?: () => void;
   onAdd?: () => void;
   compact?: boolean;
+  showGallery?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -18,21 +20,59 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onView,
   onAdd,
   compact = false,
+  showGallery = false,
 }) => {
   const { state } = useApp();
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
   return (
     <Card hover className={compact ? 'w-48' : 'w-full max-w-sm'}>
       <div className="relative group">
-        <img
-          src={product.images[0]}
-          alt={product.title}
-          className={`w-full object-cover rounded-t-lg ${compact ? 'h-32' : 'h-64'}`}
-        />
+        {showGallery && product.images.length > 1 ? (
+          <ProductImageGallery 
+            product={product} 
+            className={compact ? 'h-32' : 'h-64'} 
+          />
+        ) : (
+          <>
+            {imageLoading && (
+              <div className={`w-full bg-gray-200 animate-pulse rounded-t-lg flex items-center justify-center ${compact ? 'h-32' : 'h-64'}`}>
+                <ImageIcon className="w-8 h-8 text-gray-400" />
+              </div>
+            )}
+            
+            {!imageError ? (
+              <img
+                src={product.images[0]}
+                alt={product.title}
+                className={`w-full object-cover rounded-t-lg transition-opacity duration-300 ${compact ? 'h-32' : 'h-64'} ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+              />
+            ) : (
+              <div className={`w-full bg-gray-100 rounded-t-lg flex items-center justify-center ${compact ? 'h-32' : 'h-64'}`}>
+                <div className="text-center">
+                  <ImageIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">Image not available</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
         
         {discount > 0 && (
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-medium">
