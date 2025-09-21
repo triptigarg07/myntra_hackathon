@@ -161,9 +161,8 @@ export const LandingPage: React.FC = () => {
           </p>
           <Button
             size="lg"
-            variant="secondary"
             onClick={() => setShowCreateModal(true)}
-            className="bg-white text-pink-600 hover:bg-gray-100"
+            className="bg-white text-pink-600 hover:bg-gray-50 border-2 border-white hover:border-gray-200"
           >
             Get Started Now
             <ArrowRight className="w-5 h-5 ml-2" />

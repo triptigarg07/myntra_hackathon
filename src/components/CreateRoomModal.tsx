@@ -63,6 +63,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({
     setIsCreating(false);
     onClose();
     setRoomName('');
+    
+    // Scroll to top smoothly after room creation
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   return (
