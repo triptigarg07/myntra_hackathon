@@ -23,8 +23,7 @@ type AppAction =
   | { type: 'SET_RECOMMENDATIONS'; payload: Product[] }
   | { type: 'TOGGLE_SECRET_MODE' }
   | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
-  | { type: 'UPDATE_MEMBER_STATUS'; payload: { userId: string; isOnline: boolean } }
-  | { type: 'LOGOUT' };
+  | { type: 'UPDATE_MEMBER_STATUS'; payload: { userId: string; isOnline: boolean } };
 
 const initialState: AppState = {
   user: null,
@@ -68,15 +67,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             ? { ...member, isOnline: action.payload.isOnline }
             : member
         ),
-      };
-    case 'LOGOUT':
-      return {
-        ...state,
-        currentRoom: null,
-        roomMembers: [],
-        roomActivities: [],
-        recommendations: [],
-        isSecretMode: false,
       };
     default:
       return state;
