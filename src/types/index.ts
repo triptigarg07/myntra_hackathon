@@ -111,3 +111,27 @@ export interface Cart {
   totalPrice: number;
   lastUpdated: Date;
 }
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  userId: string;
+  user: User;
+  message: string;
+  type: 'text' | 'product' | 'system';
+  productId?: string;
+  product?: Product;
+  isSecret: boolean;
+  createdAt: Date;
+  editedAt?: Date;
+  replyTo?: string;
+}
+
+export interface ChatRoom {
+  id: string;
+  roomId: string;
+  messages: ChatMessage[];
+  lastMessage?: ChatMessage;
+  unreadCount: number;
+  isTyping: { [userId: string]: boolean };
+}

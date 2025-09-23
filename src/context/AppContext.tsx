@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, Room, RoomMember, RoomActivity, Product, PackingList, Cart, CartItem } from '../types';
+import { User, Room, RoomMember, RoomActivity, Product, PackingList, Cart, CartItem, ChatMessage, ChatRoom } from '../types';
 import { mockUser, generateMockProducts } from '../utils/mockData';
 
 interface AppState {
@@ -13,6 +13,8 @@ interface AppState {
   cart: Cart;
   isSecretMode: boolean;
   isConnected: boolean;
+  chatRoom: ChatRoom | null;
+  isTyping: { [userId: string]: boolean };
 }
 
 type AppAction = 
@@ -31,7 +33,13 @@ type AppAction =
   | { type: 'CLEAR_CART' }
   | { type: 'TOGGLE_SECRET_MODE' }
   | { type: 'SET_CONNECTION_STATUS'; payload: boolean }
-  | { type: 'UPDATE_MEMBER_STATUS'; payload: { userId: string; isOnline: boolean } };
+  | { type: 'UPDATE_MEMBER_STATUS'; payload: { userId: string; isOnline: boolean } }
+  | { type: 'SET_CHAT_ROOM'; payload: ChatRoom | null }
+  | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
+  | { type: 'UPDATE_CHAT_MESSAGE'; payload: ChatMessage }
+  | { type: 'DELETE_CHAT_MESSAGE'; payload: string }
+  | { type: 'SET_TYPING_STATUS'; payload: { userId: string; isTyping: boolean } }
+  | { type: 'CLEAR_TYPING_STATUS' };
 
 const initialState: AppState = {
   user: null,
@@ -49,6 +57,8 @@ const initialState: AppState = {
   },
   isSecretMode: false,
   isConnected: false,
+  chatRoom: null,
+  isTyping: {},
 };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -168,6 +178,51 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
             : member
         ),
       };
+    case 'SET_CHAT_ROOM':
+      return { ...state, chatRoom: action.payload };
+    case 'ADD_CHAT_MESSAGE':
+      if (!state.chatRoom) return state;
+      return {
+        ...state,
+        chatRoom: {
+          ...state.chatRoom,
+          messages: [...state.chatRoom.messages, action.payload],
+          lastMessage: action.payload,
+        },
+      };
+    case 'UPDATE_CHAT_MESSAGE':
+      if (!state.chatRoom) return state;
+      return {
+        ...state,
+        chatRoom: {
+          ...state.chatRoom,
+          messages: state.chatRoom.messages.map(msg =>
+            msg.id === action.payload.id ? action.payload : msg
+          ),
+        },
+      };
+    case 'DELETE_CHAT_MESSAGE':
+      if (!state.chatRoom) return state;
+      return {
+        ...state,
+        chatRoom: {
+          ...state.chatRoom,
+          messages: state.chatRoom.messages.filter(msg => msg.id !== action.payload),
+        },
+      };
+    case 'SET_TYPING_STATUS':
+      return {
+        ...state,
+        isTyping: {
+          ...state.isTyping,
+          [action.payload.userId]: action.payload.isTyping,
+        },
+      };
+    case 'CLEAR_TYPING_STATUS':
+      return {
+        ...state,
+        isTyping: {},
+      };
     default:
       return state;
   }
@@ -186,6 +241,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_USER', payload: mockUser });
     dispatch({ type: 'SET_PRODUCTS', payload: generateMockProducts(50) });
     dispatch({ type: 'SET_CONNECTION_STATUS', payload: true });
+    
+    // Initialize mock chat room
+    const mockChatRoom: ChatRoom = {
+      id: 'chat_room_1',
+      roomId: 'room_1',
+      messages: [
+        {
+          id: 'msg_1',
+          roomId: 'room_1',
+          userId: 'user_1',
+          user: mockUser,
+          message: 'Welcome to the family room! Start chatting and sharing products.',
+          type: 'system',
+          isSecret: false,
+          createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+        }
+      ],
+      lastMessage: undefined,
+      unreadCount: 0,
+      isTyping: {},
+    };
+    
+    dispatch({ type: 'SET_CHAT_ROOM', payload: mockChatRoom });
   }, []);
 
   return (

@@ -4,6 +4,7 @@ import { Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { useApp } from '../context/AppContext';
 import { generateMockActivities } from '../utils/mockData';
+import { ChatMessage } from '../types';
 
 export const ProductGrid: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -61,6 +62,28 @@ export const ProductGrid: React.FC = () => {
     dispatch({ type: 'ADD_ACTIVITY', payload: activity });
   };
 
+  const handleProductShare = (productId: string) => {
+    if (!state.currentRoom || !state.user) return;
+
+    const product = state.products.find(p => p.id === productId);
+    if (!product) return;
+
+    const productMessage: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      roomId: state.currentRoom.id,
+      userId: state.user.id,
+      user: state.user,
+      message: `Check out this ${product.title}`,
+      type: 'product',
+      productId: product.id,
+      product: product,
+      isSecret: state.isSecretMode,
+      createdAt: new Date(),
+    };
+
+    dispatch({ type: 'ADD_CHAT_MESSAGE', payload: productMessage });
+  };
+
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
@@ -107,6 +130,7 @@ export const ProductGrid: React.FC = () => {
               product={product}
               onView={() => handleProductView(product.id)}
               onAdd={() => handleProductAdd(product.id)}
+              onShare={() => handleProductShare(product.id)}
               showGallery={product.images.length > 1}
             />
           </motion.div>

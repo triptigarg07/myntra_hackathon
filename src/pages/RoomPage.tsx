@@ -4,6 +4,7 @@ import { ProductGrid } from '../components/ProductGrid';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { Recommendations } from '../components/Recommendations';
 import { TripPlanner } from '../components/TripPlanner';
+import { FamilyChat } from '../components/FamilyChat';
 
 export const RoomPage: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ export const RoomPage: React.FC = () => {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-6">
             <TripPlanner />
+            <FamilyChat />
             <Recommendations />
             <ProductGrid />
           </div>

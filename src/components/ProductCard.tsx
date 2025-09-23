@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Star, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { Heart, ShoppingBag, Star, Eye, EyeOff, Image as ImageIcon, Share2 } from 'lucide-react';
 import { Product } from '../types';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -11,6 +11,7 @@ interface ProductCardProps {
   product: Product;
   onView?: () => void;
   onAdd?: () => void;
+  onShare?: () => void;
   compact?: boolean;
   showGallery?: boolean;
 }
@@ -19,6 +20,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onView,
   onAdd,
+  onShare,
   compact = false,
   showGallery = false,
 }) => {
@@ -105,6 +107,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ShoppingBag className="w-4 h-4" />
               Add
             </Button>
+            {onShare && (
+              <Button
+                size="sm"
+                onClick={onShare}
+                className="bg-pink-500 text-white hover:bg-pink-600"
+              >
+                <Share2 className="w-4 h-4 mr-1" />
+                Share
+              </Button>
+            )}
           </div>
         </div>
       </div>
