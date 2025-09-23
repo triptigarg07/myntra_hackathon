@@ -135,3 +135,22 @@ export interface ChatRoom {
   unreadCount: number;
   isTyping: { [userId: string]: boolean };
 }
+
+export interface ProductVote {
+  id: string;
+  messageId: string;
+  productId: string;
+  userId: string;
+  user: User;
+  voteType: 'like' | 'dislike';
+  createdAt: Date;
+}
+
+export interface ProductPoll {
+  messageId: string;
+  productId: string;
+  likes: number;
+  dislikes: number;
+  userVotes: { [userId: string]: 'like' | 'dislike' };
+  totalVotes: number;
+}

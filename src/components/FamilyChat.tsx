@@ -10,7 +10,9 @@ import {
   Trash2, 
   Reply,
   ShoppingBag,
-  ExternalLink
+  ExternalLink,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -29,6 +31,7 @@ export const FamilyChat: React.FC<FamilyChatProps> = ({ onShareProduct }) => {
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
+  const [voteNotification, setVoteNotification] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +110,26 @@ export const FamilyChat: React.FC<FamilyChatProps> = ({ onShareProduct }) => {
     setShowMessageMenu(null);
   };
 
+  const handleVote = (messageId: string, productId: string, voteType: 'like' | 'dislike') => {
+    if (!state.user) return;
+    
+    const poll = state.productPolls[messageId];
+    const userVote = poll?.userVotes[state.user.id];
+    
+    // If user already voted the same way, remove the vote
+    if (userVote === voteType) {
+      dispatch({ type: 'REMOVE_VOTE', payload: { messageId, productId } });
+      setVoteNotification(`Vote removed`);
+    } else {
+      // Otherwise, add or change the vote
+      dispatch({ type: 'VOTE_ON_PRODUCT', payload: { messageId, productId, voteType } });
+      setVoteNotification(`You ${voteType === 'like' ? 'liked' : 'disliked'} this product`);
+    }
+    
+    // Clear notification after 2 seconds
+    setTimeout(() => setVoteNotification(null), 2000);
+  };
+
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
@@ -178,6 +201,18 @@ export const FamilyChat: React.FC<FamilyChatProps> = ({ onShareProduct }) => {
 
       {isExpanded && (
         <div className="flex flex-col h-96">
+          {/* Vote Notification */}
+          {voteNotification && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mx-4 mt-2 p-2 bg-green-100 text-green-700 text-xs rounded-lg text-center"
+            >
+              {voteNotification}
+            </motion.div>
+          )}
+
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {Object.keys(messageGroups).length === 0 ? (
@@ -252,6 +287,83 @@ export const FamilyChat: React.FC<FamilyChatProps> = ({ onShareProduct }) => {
                                 <p className="text-xs mt-2 opacity-75">
                                   {msg.message}
                                 </p>
+                                
+                                {/* Voting Section */}
+                                <div className="mt-3 pt-2 border-t border-opacity-20 border-white">
+                                  <div className="flex items-center gap-2">
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => handleVote(msg.id, msg.product!.id, 'like')}
+                                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                        state.productPolls[msg.id]?.userVotes[state.user?.id || ''] === 'like'
+                                          ? isOwn 
+                                            ? 'bg-white bg-opacity-25 text-white shadow-sm' 
+                                            : 'bg-green-100 text-green-700 shadow-sm'
+                                          : isOwn
+                                            ? 'hover:bg-white hover:bg-opacity-15 text-white text-opacity-75 hover:text-opacity-100'
+                                            : 'hover:bg-gray-200 text-gray-600 hover:text-gray-800'
+                                      }`}
+                                    >
+                                      <ThumbsUp className={`w-3 h-3 ${
+                                        state.productPolls[msg.id]?.userVotes[state.user?.id || ''] === 'like' ? 'animate-pulse' : ''
+                                      }`} />
+                                      <span className="font-semibold">{state.productPolls[msg.id]?.likes || 0}</span>
+                                    </motion.button>
+                                    
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => handleVote(msg.id, msg.product!.id, 'dislike')}
+                                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                        state.productPolls[msg.id]?.userVotes[state.user?.id || ''] === 'dislike'
+                                          ? isOwn 
+                                            ? 'bg-white bg-opacity-25 text-white shadow-sm' 
+                                            : 'bg-red-100 text-red-700 shadow-sm'
+                                          : isOwn
+                                            ? 'hover:bg-white hover:bg-opacity-15 text-white text-opacity-75 hover:text-opacity-100'
+                                            : 'hover:bg-gray-200 text-gray-600 hover:text-gray-800'
+                                      }`}
+                                    >
+                                      <ThumbsDown className={`w-3 h-3 ${
+                                        state.productPolls[msg.id]?.userVotes[state.user?.id || ''] === 'dislike' ? 'animate-pulse' : ''
+                                      }`} />
+                                      <span className="font-semibold">{state.productPolls[msg.id]?.dislikes || 0}</span>
+                                    </motion.button>
+                                    
+                                    <div className="flex items-center gap-1 ml-2">
+                                      <div className={`w-2 h-2 rounded-full ${
+                                        (state.productPolls[msg.id]?.likes || 0) > (state.productPolls[msg.id]?.dislikes || 0)
+                                          ? 'bg-green-400'
+                                          : (state.productPolls[msg.id]?.dislikes || 0) > (state.productPolls[msg.id]?.likes || 0)
+                                          ? 'bg-red-400'
+                                          : 'bg-gray-400'
+                                      }`} />
+                                      <span className="text-xs opacity-60 font-medium">
+                                        {state.productPolls[msg.id]?.totalVotes || 0} votes
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Vote Summary */}
+                                  {(state.productPolls[msg.id]?.totalVotes || 0) > 0 && (
+                                    <div className="mt-2">
+                                      <div className="flex items-center gap-2 text-xs opacity-75">
+                                        <div className="flex-1 bg-white bg-opacity-10 rounded-full h-1.5">
+                                          <div 
+                                            className="bg-green-400 h-1.5 rounded-full transition-all duration-300"
+                                            style={{ 
+                                              width: `${((state.productPolls[msg.id]?.likes || 0) / (state.productPolls[msg.id]?.totalVotes || 1)) * 100}%` 
+                                            }}
+                                          />
+                                        </div>
+                                        <span className="text-xs font-medium">
+                                          {Math.round(((state.productPolls[msg.id]?.likes || 0) / (state.productPolls[msg.id]?.totalVotes || 1)) * 100)}% positive
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               <div className={`rounded-lg px-3 py-2 ${

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User, Room, RoomMember, RoomActivity, Product, PackingList, Cart, CartItem, ChatMessage, ChatRoom } from '../types';
+import { User, Room, RoomMember, RoomActivity, Product, PackingList, Cart, CartItem, ChatMessage, ChatRoom, ProductVote, ProductPoll } from '../types';
 import { mockUser, generateMockProducts } from '../utils/mockData';
 
 interface AppState {
@@ -15,6 +15,7 @@ interface AppState {
   isConnected: boolean;
   chatRoom: ChatRoom | null;
   isTyping: { [userId: string]: boolean };
+  productPolls: { [messageId: string]: ProductPoll };
 }
 
 type AppAction = 
@@ -39,7 +40,9 @@ type AppAction =
   | { type: 'UPDATE_CHAT_MESSAGE'; payload: ChatMessage }
   | { type: 'DELETE_CHAT_MESSAGE'; payload: string }
   | { type: 'SET_TYPING_STATUS'; payload: { userId: string; isTyping: boolean } }
-  | { type: 'CLEAR_TYPING_STATUS' };
+  | { type: 'CLEAR_TYPING_STATUS' }
+  | { type: 'VOTE_ON_PRODUCT'; payload: { messageId: string; productId: string; voteType: 'like' | 'dislike' } }
+  | { type: 'REMOVE_VOTE'; payload: { messageId: string; productId: string } };
 
 const initialState: AppState = {
   user: null,
@@ -59,6 +62,7 @@ const initialState: AppState = {
   isConnected: false,
   chatRoom: null,
   isTyping: {},
+  productPolls: {},
 };
 
 const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -223,6 +227,102 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         ...state,
         isTyping: {},
       };
+    case 'VOTE_ON_PRODUCT':
+      if (!state.user) return state;
+      
+      const { messageId, productId, voteType } = action.payload;
+      const currentPoll = state.productPolls[messageId];
+      
+      if (currentPoll) {
+        // Update existing poll
+        const newUserVotes = { ...currentPoll.userVotes };
+        const previousVote = newUserVotes[state.user.id];
+        
+        // Calculate new counts
+        let newLikes = currentPoll.likes;
+        let newDislikes = currentPoll.dislikes;
+        
+        // Remove previous vote if exists
+        if (previousVote) {
+          if (previousVote === 'like') {
+            newLikes--;
+          } else {
+            newDislikes--;
+          }
+        }
+        
+        // Add new vote
+        newUserVotes[state.user.id] = voteType;
+        if (voteType === 'like') {
+          newLikes++;
+        } else {
+          newDislikes++;
+        }
+        
+        const updatedPoll = {
+          ...currentPoll,
+          likes: newLikes,
+          dislikes: newDislikes,
+          userVotes: newUserVotes,
+          totalVotes: newLikes + newDislikes,
+        };
+        
+        return {
+          ...state,
+          productPolls: {
+            ...state.productPolls,
+            [messageId]: updatedPoll,
+          },
+        };
+      } else {
+        // Create new poll
+        const newPoll: ProductPoll = {
+          messageId,
+          productId,
+          likes: voteType === 'like' ? 1 : 0,
+          dislikes: voteType === 'dislike' ? 1 : 0,
+          userVotes: { [state.user.id]: voteType },
+          totalVotes: 1,
+        };
+        
+        return {
+          ...state,
+          productPolls: {
+            ...state.productPolls,
+            [messageId]: newPoll,
+          },
+        };
+      }
+    case 'REMOVE_VOTE':
+      if (!state.user) return state;
+      
+      const pollToUpdate = state.productPolls[action.payload.messageId];
+      if (!pollToUpdate) return state;
+      
+      const userVote = pollToUpdate.userVotes[state.user.id];
+      if (!userVote) return state;
+      
+      const updatedUserVotes = { ...pollToUpdate.userVotes };
+      delete updatedUserVotes[state.user.id];
+      
+      const newLikes = userVote === 'like' ? pollToUpdate.likes - 1 : pollToUpdate.likes;
+      const newDislikes = userVote === 'dislike' ? pollToUpdate.dislikes - 1 : pollToUpdate.dislikes;
+      
+      const updatedPoll = {
+        ...pollToUpdate,
+        likes: newLikes,
+        dislikes: newDislikes,
+        userVotes: updatedUserVotes,
+        totalVotes: newLikes + newDislikes,
+      };
+      
+      return {
+        ...state,
+        productPolls: {
+          ...state.productPolls,
+          [action.payload.messageId]: updatedPoll,
+        },
+      };
     default:
       return state;
   }
@@ -264,6 +364,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     
     dispatch({ type: 'SET_CHAT_ROOM', payload: mockChatRoom });
+    
+    // Add some mock room members for testing
+    const mockMembers = [
+      {
+        id: 'member_1',
+        roomId: 'room_1',
+        userId: 'user_1',
+        user: mockUser,
+        role: 'owner' as const,
+        joinedAt: new Date(),
+        isOnline: true,
+      },
+      {
+        id: 'member_2',
+        roomId: 'room_1',
+        userId: 'user_2',
+        user: {
+          id: 'user_2',
+          name: 'Sarah Johnson',
+          email: 'sarah@example.com',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+        },
+        role: 'member' as const,
+        joinedAt: new Date(),
+        isOnline: true,
+      },
+    ];
+    
+    dispatch({ type: 'SET_ROOM_MEMBERS', payload: mockMembers });
   }, []);
 
   return (

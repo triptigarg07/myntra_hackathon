@@ -5,6 +5,7 @@ import { ActivityFeed } from '../components/ActivityFeed';
 import { Recommendations } from '../components/Recommendations';
 import { TripPlanner } from '../components/TripPlanner';
 import { FamilyChat } from '../components/FamilyChat';
+import { VotingSummary } from '../components/VotingSummary';
 
 export const RoomPage: React.FC = () => {
   return (
@@ -22,8 +23,9 @@ export const RoomPage: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <ActivityFeed />
+            <VotingSummary />
           </div>
         </div>
       </div>
